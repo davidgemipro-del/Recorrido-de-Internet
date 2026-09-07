@@ -1,0 +1,1066 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Simulador educativo del recorrido de un mensaje desde el navegador hasta una aplicación en la nube.">
+  <title>Ruta de un mensaje | Laboratorio de redes</title>
+  <style>
+    :root {
+      --bg: #07111f;
+      --panel: #0e1b2e;
+      --panel-2: #12243c;
+      --line: #294361;
+      --muted: #9fb2c8;
+      --text: #f3f8ff;
+      --cyan: #37d7ff;
+      --blue: #5c7cff;
+      --green: #4ee59a;
+      --yellow: #ffd166;
+      --red: #ff647c;
+      --shadow: 0 20px 70px rgba(0, 0, 0, .28);
+    }
+
+    * { box-sizing: border-box; }
+
+    html { color-scheme: dark; }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 15% 0%, rgba(55, 215, 255, .13), transparent 32rem),
+        radial-gradient(circle at 85% 20%, rgba(92, 124, 255, .12), transparent 30rem),
+        var(--bg);
+    }
+
+    button, input, select { font: inherit; }
+
+    button { cursor: pointer; }
+
+    button:focus-visible, input:focus-visible, select:focus-visible {
+      outline: 3px solid rgba(55, 215, 255, .55);
+      outline-offset: 2px;
+    }
+
+    .app-shell {
+      width: min(1500px, 100%);
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 20px;
+    }
+
+    .eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin: 0 0 6px;
+      color: var(--cyan);
+      font-size: .82rem;
+      font-weight: 800;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 18px var(--cyan);
+      content: "";
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.8rem, 3vw, 3rem);
+      line-height: 1;
+      letter-spacing: -.04em;
+    }
+
+    .intro {
+      max-width: 590px;
+      margin: 8px 0 0;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex: none;
+      padding: 9px 13px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      background: rgba(14, 27, 46, .86);
+      font-size: .85rem;
+    }
+
+    .status-pill span {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 12px var(--green);
+    }
+
+    .panel {
+      border: 1px solid rgba(90, 125, 162, .28);
+      border-radius: 18px;
+      background: linear-gradient(155deg, rgba(18, 36, 60, .94), rgba(10, 22, 38, .96));
+      box-shadow: var(--shadow);
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: minmax(320px, 1.6fr) minmax(180px, .7fr) minmax(150px, .55fr) auto;
+      gap: 12px;
+      align-items: end;
+      padding: 17px;
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: grid;
+      gap: 7px;
+      min-width: 0;
+      color: var(--muted);
+      font-size: .78rem;
+      font-weight: 750;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    input, select {
+      width: 100%;
+      height: 46px;
+      padding: 0 13px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      color: var(--text);
+      background: rgba(4, 13, 25, .65);
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    input::placeholder { color: #6f839a; }
+
+    input[type="range"] {
+      height: 46px;
+      padding: 0;
+      accent-color: var(--cyan);
+    }
+
+    .primary {
+      height: 46px;
+      padding: 0 20px;
+      border: 0;
+      border-radius: 11px;
+      color: #04111a;
+      background: linear-gradient(135deg, var(--cyan), #70f0c2);
+      font-weight: 900;
+      box-shadow: 0 10px 30px rgba(55, 215, 255, .2);
+    }
+
+    .primary:hover { filter: brightness(1.08); }
+
+    .primary:disabled, .secondary:disabled { cursor: not-allowed; opacity: .45; }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1.7fr) minmax(320px, .68fr);
+      gap: 18px;
+    }
+
+    .simulator { padding: 18px; }
+
+    .sim-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 15px;
+    }
+
+    .phase {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: .94rem;
+      font-weight: 800;
+    }
+
+    .phase-badge {
+      padding: 6px 10px;
+      border-radius: 8px;
+      color: var(--cyan);
+      background: rgba(55, 215, 255, .1);
+      font-size: .75rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .progress-wrap { min-width: min(310px, 46%); }
+
+    .progress-meta {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: .76rem;
+    }
+
+    .progress {
+      height: 7px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #06101e;
+    }
+
+    .progress > span {
+      display: block;
+      width: 0;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--cyan), var(--green));
+      transition: width .35s ease;
+    }
+
+    .network-stage {
+      position: relative;
+      min-height: 470px;
+      overflow: hidden;
+      border: 1px solid rgba(90, 125, 162, .22);
+      border-radius: 15px;
+      background:
+        linear-gradient(rgba(55, 215, 255, .035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(55, 215, 255, .035) 1px, transparent 1px),
+        rgba(3, 12, 23, .62);
+      background-size: 28px 28px;
+    }
+
+    .network-stage::after {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at center, transparent 40%, rgba(2, 8, 16, .32));
+      content: "";
+    }
+
+    #routeSvg {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    #routeBase, #routeActive {
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    #routeBase { stroke: #294361; stroke-width: 3; stroke-dasharray: 7 11; }
+    #routeActive { stroke: url(#activeGradient); stroke-width: 4; filter: url(#glow); }
+
+    .route-grid {
+      position: absolute;
+      inset: 25px;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(110px, 1fr));
+      grid-template-rows: repeat(2, 1fr);
+      gap: 65px 18px;
+      align-items: center;
+    }
+
+    .node {
+      position: relative;
+      display: grid;
+      place-items: center;
+      align-content: center;
+      min-height: 134px;
+      padding: 13px 10px;
+      border: 1px solid #2b4968;
+      border-radius: 15px;
+      text-align: center;
+      background: linear-gradient(145deg, rgba(19, 42, 68, .96), rgba(10, 25, 44, .96));
+      transition: border-color .25s ease, transform .25s ease, box-shadow .25s ease, opacity .25s ease;
+    }
+
+    .node[data-pos="6"] { grid-column: 5; grid-row: 2; }
+    .node[data-pos="7"] { grid-column: 4; grid-row: 2; }
+    .node[data-pos="8"] { grid-column: 3; grid-row: 2; }
+    .node[data-pos="9"] { grid-column: 2; grid-row: 2; }
+    .node[data-pos="10"] { grid-column: 1; grid-row: 2; }
+
+    .node.visited { border-color: rgba(78, 229, 154, .55); }
+
+    .node.active {
+      z-index: 3;
+      border-color: var(--cyan);
+      transform: translateY(-4px);
+      box-shadow: 0 0 0 3px rgba(55, 215, 255, .12), 0 16px 35px rgba(0, 0, 0, .28), 0 0 28px rgba(55, 215, 255, .16);
+    }
+
+    .node.error {
+      border-color: var(--red);
+      box-shadow: 0 0 0 3px rgba(255, 100, 124, .12), 0 0 24px rgba(255, 100, 124, .18);
+    }
+
+    .node.skipped { opacity: .28; filter: grayscale(.75); }
+
+    .node-icon {
+      display: grid;
+      width: 37px;
+      height: 37px;
+      margin-bottom: 8px;
+      place-items: center;
+      border-radius: 11px;
+      color: var(--cyan);
+      background: rgba(55, 215, 255, .09);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: .72rem;
+      font-weight: 900;
+    }
+
+    .node strong { display: block; font-size: .9rem; line-height: 1.2; }
+    .node small { display: block; margin-top: 5px; color: var(--muted); font-size: .7rem; line-height: 1.25; }
+
+    .node-protocol {
+      display: inline-flex;
+      margin-top: 8px;
+      padding: 4px 7px;
+      border: 1px solid rgba(55, 215, 255, .26);
+      border-radius: 6px;
+      color: #8eeaff;
+      background: rgba(55, 215, 255, .07);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: .62rem;
+      font-weight: 800;
+      line-height: 1.15;
+    }
+
+    .packet {
+      position: absolute;
+      z-index: 6;
+      display: none;
+      width: 74px;
+      height: 44px;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid #d8fbff;
+      border-radius: 10px;
+      color: #03202b;
+      background: linear-gradient(135deg, #e5fcff, var(--cyan));
+      box-shadow: 0 0 30px rgba(55, 215, 255, .58);
+      font-size: .67rem;
+      font-weight: 950;
+      letter-spacing: .04em;
+      transform: translate(-50%, -50%);
+    }
+
+    .packet::before {
+      position: absolute;
+      top: 7px;
+      left: 8px;
+      width: 13px;
+      height: 9px;
+      border: 2px solid currentColor;
+      border-radius: 2px;
+      content: "";
+    }
+
+    .packet::after {
+      position: absolute;
+      top: 8px;
+      left: 11px;
+      width: 8px;
+      height: 8px;
+      border-bottom: 2px solid currentColor;
+      transform: rotate(45deg);
+      content: "";
+    }
+
+    .packet span { margin: 17px 0 0 5px; }
+
+    .packet.response {
+      color: #082219;
+      background: linear-gradient(135deg, #edfff7, var(--green));
+      box-shadow: 0 0 30px rgba(78, 229, 154, .58);
+    }
+
+    .packet.error-packet {
+      color: #2b0710;
+      background: linear-gradient(135deg, #fff1f4, var(--red));
+      box-shadow: 0 0 30px rgba(255, 100, 124, .58);
+    }
+
+    .stage-footer {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 14px;
+      align-items: center;
+      margin-top: 14px;
+    }
+
+    .step-title {
+      margin: 0;
+      font-size: 1.02rem;
+    }
+
+    .step-detail {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: .9rem;
+      line-height: 1.45;
+    }
+
+    .sim-buttons { display: flex; gap: 8px; }
+
+    .secondary {
+      min-height: 40px;
+      padding: 0 13px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      color: var(--text);
+      background: rgba(7, 19, 34, .8);
+      font-weight: 750;
+    }
+
+    .secondary:hover:not(:disabled) { border-color: var(--cyan); }
+
+    .side-column { display: grid; gap: 18px; align-content: start; }
+    .info-card { padding: 17px; }
+
+    .card-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 13px;
+    }
+
+    .card-heading h2 { margin: 0; font-size: 1rem; }
+
+    .log {
+      max-height: 262px;
+      margin: 0;
+      padding: 0;
+      overflow: auto;
+      list-style: none;
+      scrollbar-color: #315372 transparent;
+    }
+
+    .log li {
+      display: grid;
+      grid-template-columns: 54px 1fr;
+      gap: 9px;
+      padding: 9px 0;
+      border-top: 1px solid rgba(90, 125, 162, .16);
+      color: var(--muted);
+      font-size: .8rem;
+      line-height: 1.35;
+    }
+
+    .log li:first-child { border-top: 0; }
+    .log time { color: var(--cyan); font-family: ui-monospace, monospace; }
+    .log .ok { color: var(--green); }
+    .log .warn { color: var(--yellow); }
+    .log .bad { color: var(--red); }
+
+    .result {
+      display: none;
+      margin-top: 18px;
+      padding: 16px 17px;
+      border: 1px solid rgba(78, 229, 154, .4);
+      border-radius: 14px;
+      background: rgba(78, 229, 154, .075);
+    }
+
+    .result.error {
+      border-color: rgba(255, 100, 124, .45);
+      background: rgba(255, 100, 124, .08);
+    }
+
+    .result h2 { margin: 0 0 5px; font-size: 1.05rem; }
+    .result p { margin: 0; color: var(--muted); line-height: 1.45; }
+
+    .lesson-note {
+      margin: 16px 2px 0;
+      color: #7e94ac;
+      font-size: .78rem;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 1120px) {
+      .controls { grid-template-columns: 1fr 1fr; }
+      .message-field { grid-column: 1 / -1; }
+      .primary { width: 100%; }
+      .workspace { grid-template-columns: 1fr; }
+      .side-column { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 800px) {
+      .app-shell { padding: 16px; }
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .status-pill { align-self: flex-start; }
+      .sim-header, .stage-footer { align-items: stretch; flex-direction: column; }
+      .sim-header { display: grid; }
+      .progress-wrap { min-width: 100%; }
+      .network-stage { min-height: 780px; }
+      .route-grid {
+        inset: 18px;
+        grid-template-columns: repeat(2, minmax(120px, 1fr));
+        grid-template-rows: repeat(5, 1fr);
+        gap: 18px 35px;
+      }
+      .node { min-height: 115px; }
+      .node[data-pos="1"] { grid-column: 1; grid-row: 1; }
+      .node[data-pos="2"] { grid-column: 2; grid-row: 1; }
+      .node[data-pos="3"] { grid-column: 2; grid-row: 2; }
+      .node[data-pos="4"] { grid-column: 1; grid-row: 2; }
+      .node[data-pos="5"] { grid-column: 1; grid-row: 3; }
+      .node[data-pos="6"] { grid-column: 2; grid-row: 3; }
+      .node[data-pos="7"] { grid-column: 2; grid-row: 4; }
+      .node[data-pos="8"] { grid-column: 1; grid-row: 4; }
+      .node[data-pos="9"] { grid-column: 1; grid-row: 5; }
+      .node[data-pos="10"] { grid-column: 2; grid-row: 5; }
+      .side-column { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 560px) {
+      .controls { grid-template-columns: 1fr; }
+      .message-field { grid-column: auto; }
+      .network-stage { min-height: 1320px; }
+      .route-grid { grid-template-columns: 1fr; grid-template-rows: repeat(10, 1fr); }
+      .node[data-pos] { grid-column: 1 !important; grid-row: auto !important; }
+      .stage-footer { display: grid; }
+      .sim-buttons { display: grid; grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Laboratorio interactivo · Redes de computadores</p>
+        <h1>Ruta de un mensaje</h1>
+        <p class="intro">Escribe un mensaje y observa cómo se encapsula, atraviesa la red, llega a una aplicación en la nube y regresa al navegador.</p>
+      </div>
+      <div class="status-pill"><span></span> Simulación educativa · funciona sin Internet</div>
+    </header>
+
+    <section class="panel controls" aria-label="Configuración de la simulación">
+      <label class="message-field">Mensaje
+        <input id="messageInput" maxlength="120" value="Hola, ¿cómo viaja este mensaje?" placeholder="Escribe un mensaje para enviarlo">
+      </label>
+      <label>Escenario
+        <select id="scenarioSelect">
+          <option value="success">Entrega exitosa</option>
+          <option value="dnsFail">Fallo de DNS</option>
+          <option value="loss">Paquete perdido</option>
+          <option value="firewall">Bloqueo del firewall</option>
+          <option value="cache">Respuesta desde la CDN</option>
+          <option value="serverError">Error de la aplicación</option>
+        </select>
+      </label>
+      <label>Velocidad <span id="speedText">Normal</span>
+        <input id="speedRange" type="range" min="1" max="3" step="1" value="2" aria-label="Velocidad de la animación">
+      </label>
+      <button id="sendButton" class="primary" type="button">Enviar mensaje</button>
+    </section>
+
+    <div class="workspace">
+      <section class="panel simulator" aria-labelledby="simTitle">
+        <div class="sim-header">
+          <div class="phase">
+            <span id="phaseBadge" class="phase-badge">Preparado</span>
+            <span id="phaseText">Configura el mensaje</span>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-meta"><span>Progreso de la solicitud</span><span id="progressText">0%</span></div>
+            <div class="progress" role="progressbar" aria-label="Progreso" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="progressBar"></span></div>
+          </div>
+        </div>
+
+        <div id="networkStage" class="network-stage" aria-live="polite">
+          <svg id="routeSvg" aria-hidden="true">
+            <defs>
+              <linearGradient id="activeGradient" x1="0" x2="1">
+                <stop offset="0" stop-color="#37d7ff"></stop>
+                <stop offset="1" stop-color="#4ee59a"></stop>
+              </linearGradient>
+              <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+                <feGaussianBlur stdDeviation="3" result="blur"></feGaussianBlur>
+                <feMerge><feMergeNode in="blur"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge>
+              </filter>
+            </defs>
+            <polyline id="routeBase"></polyline>
+            <polyline id="routeActive"></polyline>
+          </svg>
+
+          <div class="route-grid">
+            <article class="node" id="node-browser" data-pos="1"><span class="node-icon">WEB</span><strong>Navegador</strong><small>Construye la solicitud</small><span class="node-protocol">HTTP/2 · POST</span></article>
+            <article class="node" id="node-dns" data-pos="2"><span class="node-icon">DNS</span><strong>DNS</strong><small>Nombre → dirección IP</small><span class="node-protocol">DNS · UDP/TCP 53</span></article>
+            <article class="node" id="node-lan" data-pos="3"><span class="node-icon">LAN</span><strong>Red local</strong><small>Comunica los equipos cercanos</small><span class="node-protocol">Wi-Fi / Ethernet</span></article>
+            <article class="node" id="node-router" data-pos="4"><span class="node-icon">NAT</span><strong>Router + NAT</strong><small>Salida hacia otras redes</small><span class="node-protocol">IPv4 · NAT</span></article>
+            <article class="node" id="node-internet" data-pos="5"><span class="node-icon">IP</span><strong>Internet</strong><small>Routers reenvían paquetes</small><span class="node-protocol">IPv4/IPv6 · enrutamiento</span></article>
+            <article class="node" id="node-security" data-pos="6"><span class="node-icon">TCP</span><strong>Conexión extremo a extremo</strong><small>Función lógica que atraviesa la red</small><span class="node-protocol">TCP 443 · TLS 1.3</span></article>
+            <article class="node" id="node-edge" data-pos="7"><span class="node-icon">WAF</span><strong>CDN + firewall</strong><small>Caché e inspección</small><span class="node-protocol">HTTPS · reglas WAF</span></article>
+            <article class="node" id="node-balancer" data-pos="8"><span class="node-icon">LB</span><strong>Balanceador</strong><small>Selecciona un servidor sano</small><span class="node-protocol">HTTP · proxy inverso</span></article>
+            <article class="node" id="node-app" data-pos="9"><span class="node-icon">APP</span><strong>Aplicación</strong><small>Procesa la operación</small><span class="node-protocol">REST · JSON</span></article>
+            <article class="node" id="node-database" data-pos="10"><span class="node-icon">DB</span><strong>Base de datos</strong><small>Consulta o guarda información</small><span class="node-protocol">SQL</span></article>
+          </div>
+          <div id="packet" class="packet" aria-hidden="true"><span>SOLICITUD</span></div>
+        </div>
+
+        <div class="stage-footer">
+          <div>
+            <h2 id="simTitle" class="step-title">Listo para comenzar</h2>
+            <p id="stepDetail" class="step-detail">Presiona “Enviar mensaje” para iniciar la simulación automática.</p>
+          </div>
+          <div class="sim-buttons">
+            <button id="pauseButton" class="secondary" type="button" disabled>Pausar</button>
+            <button id="nextButton" class="secondary" type="button" disabled>Siguiente paso</button>
+            <button id="resetButton" class="secondary" type="button">Reiniciar</button>
+          </div>
+        </div>
+
+        <div id="resultBox" class="result" role="status">
+          <h2 id="resultTitle">Mensaje entregado</h2>
+          <p id="resultText"></p>
+        </div>
+      </section>
+
+      <aside class="side-column">
+        <section class="panel info-card" aria-labelledby="logTitle">
+          <div class="card-heading">
+            <h2 id="logTitle">Registro de eventos</h2>
+            <button id="clearLogButton" class="secondary" type="button">Limpiar</button>
+          </div>
+          <ol id="eventLog" class="log" aria-live="polite">
+            <li><time>00:00</time><span>Simulador preparado.</span></li>
+          </ol>
+        </section>
+      </aside>
+    </div>
+
+    <p class="lesson-note">Esta herramienta representa un recorrido posible con fines didácticos. En una red real, algunos procesos se superponen, pueden intervenir más equipos y no todas las aplicaciones utilizan CDN, firewall o balanceador.</p>
+  </main>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const $ = (selector) => document.querySelector(selector);
+      const $$ = (selector) => [...document.querySelectorAll(selector)];
+
+      const els = {
+        message: $("#messageInput"),
+        scenario: $("#scenarioSelect"),
+        speed: $("#speedRange"),
+        speedText: $("#speedText"),
+        send: $("#sendButton"),
+        pause: $("#pauseButton"),
+        next: $("#nextButton"),
+        reset: $("#resetButton"),
+        clearLog: $("#clearLogButton"),
+        stage: $("#networkStage"),
+        packet: $("#packet"),
+        phaseBadge: $("#phaseBadge"),
+        phaseText: $("#phaseText"),
+        progress: $(".progress"),
+        progressBar: $("#progressBar"),
+        progressText: $("#progressText"),
+        title: $("#simTitle"),
+        detail: $("#stepDetail"),
+        result: $("#resultBox"),
+        resultTitle: $("#resultTitle"),
+        resultText: $("#resultText"),
+        log: $("#eventLog"),
+        routeBase: $("#routeBase"),
+        routeActive: $("#routeActive")
+      };
+
+      const nodeOrder = ["browser", "dns", "lan", "router", "internet", "security", "edge", "balancer", "app", "database"];
+      const nodes = Object.fromEntries(nodeOrder.map(id => [id, $("#node-" + id)]));
+
+      const descriptions = {
+        browser: ["1. El navegador prepara la solicitud", "Convierte la acción del usuario en una solicitud HTTP e incluye el mensaje como datos de aplicación."],
+        dns: ["2. DNS identifica el destino", "El resolutor busca la dirección IP asociada con el nombre del servicio. DNS resuelve nombres; no enruta paquetes."],
+        lan: ["3. La trama cruza la red local", "La interfaz Wi-Fi o Ethernet entrega los datos dentro de la LAN. Un switch o punto de acceso ayuda a alcanzar la puerta de enlace."],
+        router: ["4. El router prepara la salida", "El router conecta redes y decide el siguiente salto. NAT puede traducir la dirección privada y el puerto de origen."],
+        internet: ["5. IP atraviesa varias redes", "Los routers leen la dirección IP de destino y reenvían el datagrama. Cada salto acerca el paquete al servicio."],
+        security: ["6. TCP transporta y TLS protege", "TCP y TLS funcionan de extremo a extremo: sus mensajes atraviesan la LAN, el router e Internet. TCP entrega los bytes en orden y TLS 1.3 cifra los datos de HTTP/2; esta faceta no representa un equipo físico adicional."],
+        edge: ["7. La solicitud llega al borde", "La CDN busca una copia en caché y el firewall de aplicaciones evalúa reglas antes de permitir el avance."],
+        balancer: ["8. El balanceador distribuye el trabajo", "Las reglas y comprobaciones de estado ayudan a elegir una instancia disponible para atender la solicitud."],
+        app: ["9. La aplicación interpreta el mensaje", "El servicio valida la operación, aplica la lógica del programa y decide si necesita consultar o modificar datos."],
+        database: ["10. La base de datos participa", "La aplicación solicita los datos necesarios o guarda el mensaje y recibe el resultado de esa operación."],
+        response: ["La respuesta regresa al navegador", "Cada capa procesa o retira su información correspondiente. El navegador recibe el estado HTTP y presenta el resultado."],
+        retransmit: ["Se detectó una pérdida", "En esta simulación TCP no recibe confirmación y retransmite los datos. La solicitud puede continuar después del retraso."],
+        cacheHit: ["La CDN encontró una copia en caché", "El borde puede responder sin consultar el balanceador, la aplicación ni la base de datos."],
+        dnsFail: ["DNS no pudo resolver el nombre", "Sin una dirección de destino, el navegador no puede iniciar la conexión con el servicio."],
+        firewall: ["El firewall bloqueó la solicitud", "Una regla rechazó el tráfico. La solicitud no llega al balanceador ni a la aplicación."],
+        serverError: ["La aplicación produjo un error", "El servidor devuelve un estado 500. La red funcionó, pero el procesamiento de la aplicación no terminó correctamente."],
+        done: ["Mensaje entregado y respuesta recibida", "El navegador recibió 200 OK y puede mostrar al usuario el resultado de la operación."]
+      };
+
+      let running = false;
+      let paused = false;
+      let manualResolve = null;
+      let startTime = 0;
+      let currentAnimation = null;
+      let currentPath = [];
+      let activePathPoints = [];
+
+      function escapeText(value) {
+        return value.replace(/[&<>"']/g, char => ({"&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#039;"})[char]);
+      }
+
+      function timestamp() {
+        const elapsed = Math.max(0, Date.now() - startTime);
+        const seconds = Math.floor(elapsed / 1000);
+        const hundredths = Math.floor((elapsed % 1000) / 10);
+        return String(seconds).padStart(2, "0") + ":" + String(hundredths).padStart(2, "0");
+      }
+
+      function addLog(text, tone = "") {
+        const li = document.createElement("li");
+        const time = document.createElement("time");
+        const span = document.createElement("span");
+        time.textContent = timestamp();
+        span.textContent = text;
+        if (tone) span.className = tone;
+        li.append(time, span);
+        els.log.appendChild(li);
+        els.log.scrollTop = els.log.scrollHeight;
+      }
+
+      function centerOf(node) {
+        const stageRect = els.stage.getBoundingClientRect();
+        const rect = node.getBoundingClientRect();
+        return {
+          x: rect.left - stageRect.left + rect.width / 2,
+          y: rect.top - stageRect.top + rect.height / 2
+        };
+      }
+
+      function updateRoute() {
+        const points = nodeOrder.map(id => centerOf(nodes[id]));
+        els.routeBase.setAttribute("points", points.map(p => `${p.x},${p.y}`).join(" "));
+        if (activePathPoints.length) {
+          els.routeActive.setAttribute("points", activePathPoints.map(p => `${p.x},${p.y}`).join(" "));
+        }
+      }
+
+      function setProgress(done, total) {
+        const value = total ? Math.round((done / total) * 100) : 0;
+        els.progressBar.style.width = value + "%";
+        els.progressText.textContent = value + "%";
+        els.progress.setAttribute("aria-valuenow", String(value));
+      }
+
+      function setDescription(key) {
+        const [title, detail] = descriptions[key];
+        els.title.textContent = title;
+        els.detail.textContent = detail;
+      }
+
+      function duration() {
+        return ({1: 1500, 2: 850, 3: 420})[els.speed.value];
+      }
+
+      function wait(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+      }
+
+      async function waitForPermission() {
+        while (paused && running) {
+          await new Promise(resolve => { manualResolve = resolve; });
+          manualResolve = null;
+        }
+      }
+
+      async function movePacket(fromId, toId, mode = "request") {
+        if (!running) return;
+        await waitForPermission();
+        const from = centerOf(nodes[fromId]);
+        const to = centerOf(nodes[toId]);
+        els.packet.style.display = "flex";
+        els.packet.className = "packet" + (mode === "response" ? " response" : mode === "error" ? " error-packet" : "");
+        els.packet.querySelector("span").textContent = mode === "response" ? "RESPUESTA" : mode === "error" ? "ERROR" : "SOLICITUD";
+        els.packet.style.left = from.x + "px";
+        els.packet.style.top = from.y + "px";
+
+        currentAnimation = els.packet.animate([
+          { left: from.x + "px", top: from.y + "px", transform: "translate(-50%, -50%) scale(.9)" },
+          { left: to.x + "px", top: to.y + "px", transform: "translate(-50%, -50%) scale(1.08)", offset: .52 },
+          { left: to.x + "px", top: to.y + "px", transform: "translate(-50%, -50%) scale(1)" }
+        ], { duration: duration(), easing: "cubic-bezier(.25,.8,.25,1)", fill: "forwards" });
+
+        await currentAnimation.finished.catch(() => {});
+        els.packet.style.left = to.x + "px";
+        els.packet.style.top = to.y + "px";
+        currentAnimation = null;
+      }
+
+      function markActive(id, isError = false) {
+        $$(".node").forEach(node => node.classList.remove("active", "error"));
+        nodes[id].classList.add("active");
+        if (isError) nodes[id].classList.add("error");
+        nodes[id].classList.add("visited");
+      }
+
+      function skipNodes(ids) {
+        ids.forEach(id => nodes[id].classList.add("skipped"));
+      }
+
+      function resetVisuals(clearLog = false) {
+        running = false;
+        paused = false;
+        currentAnimation?.cancel();
+        currentAnimation = null;
+        manualResolve?.();
+        manualResolve = null;
+        $$(".node").forEach(node => node.classList.remove("active", "visited", "error", "skipped"));
+        els.packet.style.display = "none";
+        els.packet.className = "packet";
+        els.phaseBadge.textContent = "Preparado";
+        els.phaseText.textContent = "Configura el mensaje";
+        els.pause.textContent = "Pausar";
+        els.pause.disabled = true;
+        els.next.disabled = true;
+        els.send.disabled = false;
+        els.message.disabled = false;
+        els.scenario.disabled = false;
+        els.result.style.display = "none";
+        els.result.className = "result";
+        setProgress(0, 1);
+        setDescription("browser");
+        els.title.textContent = "Listo para comenzar";
+        els.detail.textContent = "Presiona “Enviar mensaje” para iniciar la simulación automática.";
+        activePathPoints = [];
+        els.routeActive.setAttribute("points", "");
+        if (clearLog) els.log.innerHTML = '<li><time>00:00</time><span>Simulador preparado.</span></li>';
+        requestAnimationFrame(updateRoute);
+      }
+
+      async function stopWithError(nodeId, descriptionKey, title, text) {
+        markActive(nodeId, true);
+        setDescription(descriptionKey);
+        addLog(title + ": " + text, "bad");
+        els.packet.className = "packet error-packet";
+        els.packet.querySelector("span").textContent = "ERROR";
+        showResult(title, text, true);
+        finishControls();
+      }
+
+      function showResult(title, text, error = false) {
+        els.resultTitle.textContent = title;
+        els.resultText.textContent = text;
+        els.result.className = "result" + (error ? " error" : "");
+        els.result.style.display = "block";
+      }
+
+      function finishControls() {
+        running = false;
+        paused = false;
+        els.pause.disabled = true;
+        els.next.disabled = true;
+        els.send.disabled = false;
+        els.message.disabled = false;
+        els.scenario.disabled = false;
+        els.phaseBadge.textContent = "Finalizado";
+      }
+
+      async function runSimulation() {
+        if (running) return;
+        const message = els.message.value.trim();
+        if (!message) {
+          els.message.focus();
+          els.detail.textContent = "Escribe un mensaje antes de comenzar.";
+          return;
+        }
+
+        resetVisuals(true);
+        running = true;
+        startTime = Date.now();
+        els.send.disabled = true;
+        els.message.disabled = true;
+        els.scenario.disabled = true;
+        els.pause.disabled = false;
+        els.next.disabled = true;
+        els.phaseBadge.textContent = "Solicitud";
+        els.phaseText.textContent = "Cliente → nube";
+        addLog('Usuario envía: “' + message + '”', "ok");
+
+        const scenario = els.scenario.value;
+        const forward = [...nodeOrder];
+        const total = scenario === "cache" ? 12 : scenario === "dnsFail" ? 2 : scenario === "firewall" ? 7 : 19;
+        currentPath = forward;
+        activePathPoints = [centerOf(nodes.browser)];
+        updateRoute();
+
+        markActive("browser");
+        setDescription("browser");
+        addLog("HTTP construye POST /api/mensaje.");
+        setProgress(1, total);
+        await wait(duration() * .65);
+
+        for (let index = 1; index < forward.length && running; index++) {
+          const from = forward[index - 1];
+          const to = forward[index];
+          await movePacket(from, to);
+          if (!running) return;
+          activePathPoints.push(centerOf(nodes[to]));
+          updateRoute();
+          markActive(to);
+          setDescription(to);
+          setProgress(index + 1, total);
+
+          const logs = {
+            dns: "DNS responde con 203.0.113.42 (dirección de ejemplo).",
+            lan: "La interfaz crea una trama para la red local.",
+            router: "NAT traduce 192.168.1.25:51432 → 198.51.100.8:62001.",
+            internet: "IP reenvía el datagrama entre redes.",
+            security: "TCP entrega los datos en orden y TLS 1.3 protege el contenido.",
+            edge: "CDN revisa caché; WAF evalúa sus reglas.",
+            balancer: "Balanceador elige la instancia app-02.",
+            app: "La aplicación valida y procesa POST /api/mensaje.",
+            database: "La base de datos confirma la operación."
+          };
+          addLog(logs[to]);
+
+          if (scenario === "dnsFail" && to === "dns") {
+            await stopWithError("dns", "dnsFail", "DNS_PROBE_FINISHED_NXDOMAIN", "No se encontró una dirección para el nombre solicitado.");
+            setProgress(total, total);
+            return;
+          }
+
+          if (scenario === "loss" && to === "internet") {
+            nodes.internet.classList.add("error");
+            setDescription("retransmit");
+            addLog("No llegó la confirmación; se simula una retransmisión.", "warn");
+            await wait(duration() * 1.2);
+            nodes.internet.classList.remove("error");
+            setDescription("internet");
+            addLog("La retransmisión continúa hacia el destino.", "ok");
+          }
+
+          if (scenario === "firewall" && to === "edge") {
+            skipNodes(["balancer", "app", "database"]);
+            await stopWithError("edge", "firewall", "403 Forbidden", "El firewall rechazó la solicitud según una regla simulada.");
+            setProgress(total, total);
+            return;
+          }
+
+          if (scenario === "cache" && to === "edge") {
+            skipNodes(["balancer", "app", "database"]);
+            setDescription("cacheHit");
+            addLog("Cache HIT: la CDN prepara la respuesta.", "ok");
+            await wait(duration() * .8);
+            await returnPath(["edge", "security", "internet", "router", "lan", "browser"], total, index + 2, "Contenido entregado desde la caché de la CDN.");
+            return;
+          }
+
+          if (scenario === "serverError" && to === "app") {
+            skipNodes(["database"]);
+            nodes.app.classList.add("error");
+            setDescription("serverError");
+            addLog("La aplicación genera 500 Internal Server Error.", "bad");
+            await wait(duration() * .8);
+            await returnPath(["app", "balancer", "edge", "security", "internet", "router", "lan", "browser"], total, index + 2, "La red entregó una respuesta, pero la aplicación informó un error.", true);
+            return;
+          }
+
+          await wait(duration() * .5);
+        }
+
+        if (running) {
+          await returnPath(["database", "app", "balancer", "edge", "security", "internet", "router", "lan", "browser"], total, 11, 'El servidor confirmó la recepción de “' + message + '”.');
+        }
+      }
+
+      async function returnPath(path, total, progressStart, resultText, error = false) {
+        els.phaseBadge.textContent = "Respuesta";
+        els.phaseText.textContent = "Nube → cliente";
+        els.packet.className = "packet" + (error ? " error-packet" : " response");
+        setDescription("response");
+        addLog(error ? "La respuesta de error inicia el regreso." : "Se genera 200 OK; la respuesta inicia el regreso.", error ? "bad" : "ok");
+
+        for (let index = 1; index < path.length && running; index++) {
+          await movePacket(path[index - 1], path[index], error ? "error" : "response");
+          if (!running) return;
+          markActive(path[index], error && path[index] === "browser");
+          setDescription("response");
+          setProgress(Math.min(total, progressStart + index), total);
+          addLog("Respuesta pasa por " + nodes[path[index]].querySelector("strong").textContent + ".");
+          await wait(duration() * .28);
+        }
+
+        setProgress(total, total);
+        if (!error) {
+          setDescription("done");
+          addLog("El navegador recibe 200 OK.", "ok");
+          showResult("Mensaje entregado", resultText);
+        } else {
+          showResult("500 Internal Server Error", resultText, true);
+        }
+        finishControls();
+      }
+
+      function togglePause() {
+        if (!running) return;
+        paused = !paused;
+        els.pause.textContent = paused ? "Continuar" : "Pausar";
+        els.next.disabled = !paused;
+        els.phaseBadge.textContent = paused ? "En pausa" : (els.phaseText.textContent.startsWith("Cliente") ? "Solicitud" : "Respuesta");
+        if (paused) currentAnimation?.pause();
+        else {
+          currentAnimation?.play();
+          manualResolve?.();
+        }
+      }
+
+      function nextStep() {
+        if (!paused || !running) return;
+        currentAnimation?.play();
+        manualResolve?.();
+        setTimeout(() => currentAnimation?.pause(), duration() + 20);
+      }
+
+      els.send.addEventListener("click", runSimulation);
+      els.pause.addEventListener("click", togglePause);
+      els.next.addEventListener("click", nextStep);
+      els.reset.addEventListener("click", () => resetVisuals(true));
+      els.clearLog.addEventListener("click", () => { els.log.innerHTML = '<li><time>00:00</time><span>Registro limpiado.</span></li>'; });
+      els.message.addEventListener("keydown", event => { if (event.key === "Enter") runSimulation(); });
+      els.speed.addEventListener("input", () => {
+        els.speedText.textContent = ({1: "Lenta", 2: "Normal", 3: "Rápida"})[els.speed.value];
+      });
+      window.addEventListener("resize", updateRoute);
+
+      resetVisuals(false);
+    })();
+  </script>
+</body>
+</html>
