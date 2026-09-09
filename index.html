@@ -612,7 +612,7 @@
           <span class="back"><i></i> Respuesta hacia el navegador</span>
         </div>
       </div>
-      <p class="deck-purpose">Escribe un mensaje y sigue, etapa por etapa, qué equipo actúa, qué protocolo participa y cómo cambia la información hasta aparecer en pantalla.</p>
+      <p class="deck-purpose">Escribe un mensaje y sigue siete etapas del recorrido. Los protocolos aparecen como procesos que acompañan la comunicación, no como lugares físicos.</p>
     </header>
 
     <form class="control-bench" id="simulationForm">
@@ -639,7 +639,7 @@
         </div>
       </div>
       <button class="start-btn" type="submit">Iniciar recorrido</button>
-      <p class="scenario-note" id="scenarioNote">La solicitud completa todas las etapas y el navegador construye la página recibida.</p>
+      <p class="scenario-note" id="scenarioNote">La solicitud recorre siete etapas. Los protocolos trabajan por capas hasta que el navegador presenta la respuesta.</p>
     </form>
 
     <section class="route-section" aria-labelledby="routeTitle">
@@ -661,11 +661,11 @@
           <div class="stage-index" id="stageIndex">01</div>
           <div>
             <p class="stage-kicker" id="stageZone">Cliente</p>
-            <h2 id="stageTitle">Navegador y URL</h2>
+            <h2 id="stageTitle">Navegador y preparación</h2>
           </div>
-          <div class="protocol-stamp" id="protocolStamp">URL · HTTPS</div>
+          <div class="protocol-stamp" id="protocolStamp">Procesos: URL · DNS · HTTP</div>
         </div>
-        <p class="stage-summary" id="stageSummary">El usuario inicia la comunicación al escribir una dirección o realizar una acción en una página.</p>
+        <p class="stage-summary" id="stageSummary">El navegador interpreta la URL, localiza el destino y prepara la solicitud que iniciará el recorrido.</p>
         <div class="process-grid">
           <div class="process-cell">
             <span class="process-label">Lo que entra</span>
@@ -673,16 +673,16 @@
           </div>
           <div class="process-cell">
             <span class="process-label">Lo que ocurre</span>
-            <p id="stageAction">El navegador separa el esquema, el dominio, la ruta y los parámetros.</p>
+            <p id="stageAction">DHCP normalmente ya configuró la red; el navegador consulta DNS y construye el mensaje HTTP.</p>
           </div>
           <div class="process-cell">
             <span class="process-label">Lo que sale</span>
-            <p id="stageOutput">Un destino por localizar y una solicitud por preparar.</p>
+            <p id="stageOutput">Una solicitud con destino conocido, lista para ser encapsulada y enviada.</p>
           </div>
         </div>
         <div class="reality-note">
           <strong>En una red real</strong>
-          <span id="realityNote">Una sola página puede generar muchas solicitudes adicionales para imágenes, estilos, fuentes y programas.</span>
+          <span id="realityNote">DNS es una consulta previa que también usa la red; no es una caja física atravesada por la solicitud web.</span>
         </div>
         <div class="transport-strip">
           <div class="mini-controls">
@@ -696,7 +696,7 @@
 
       <aside class="side-column">
         <section aria-labelledby="packetTitle">
-          <h2 class="panel-title" id="packetTitle">Capas del paquete <small id="packetDirection">Salida</small></h2>
+          <h2 class="panel-title" id="packetTitle">Procesos que acompañan el mensaje <small id="packetDirection">Salida</small></h2>
           <div class="payload-card" id="payloadCard">mensaje: “Hola, quiero consultar esta página”</div>
           <div class="layer-stack">
             <div class="layer" data-layer="application"><strong>Aplicación</strong><span id="applicationLayer">HTTP prepara el mensaje</span></div>
@@ -716,191 +716,123 @@
     </div>
 
     <footer class="scope-note">
-      <strong>Alcance de la demostración:</strong> este recorrido reúne funciones que pueden ocurrir en una conexión real, pero no representa una captura de paquetes. Una solicitud puede omitir la CDN, el WAF, el balanceador o la base de datos según la arquitectura del servicio.
+      <strong>Alcance de la demostración:</strong> este recorrido conceptual no representa una captura de paquetes. DHCP normalmente configuró la red antes de comenzar; DNS prepara el destino y los componentes de borde, balanceo o datos dependen de la arquitectura del servicio.
     </footer>
   </main>
 
   <script>
+    // La demostración visible usa las siete etapas resumidas en la presentación.
+    // Los protocolos se resaltan como procesos por capas dentro de cada etapa.
     const stages = [
       {
-        zone: 'Cliente', title: 'Navegador y URL', short: 'Navegador', protocol: 'URL · HTTPS', layer: 'application',
-        summary: 'El usuario inicia la comunicación al escribir una dirección o realizar una acción en una página.',
-        input: 'Una URL y la intención del usuario.',
-        action: 'El navegador separa el esquema, el dominio, la ruta y los parámetros.',
-        output: 'Un destino por localizar y una solicitud por preparar.',
-        reality: 'Una sola página puede generar muchas solicitudes adicionales para imágenes, estilos, fuentes y programas.',
-        encapsulation: 'El mensaje todavía se encuentra en el nivel de aplicación.',
-        event: 'El navegador interpretó la URL y reconoció que usará HTTPS.'
+        zone: 'Cliente', title: 'Navegador y preparación', short: 'Navegador', protocol: 'Procesos: URL · DNS · HTTP', layers: ['application'],
+        summary: 'El navegador interpreta la URL, localiza el destino y prepara la solicitud que iniciará el recorrido.',
+        input: 'Una dirección web y la acción de la persona.',
+        action: 'DHCP normalmente ya asignó IP, puerta de enlace y DNS. El navegador consulta DNS para obtener la IP y construye el mensaje HTTP.',
+        output: 'Una solicitud con destino conocido, lista para ser encapsulada y enviada.',
+        reality: 'DNS es una consulta previa que también usa la red; no es una caja física atravesada por la solicitud web.',
+        encapsulation: 'Aplicación define el mensaje; transporte, IP y enlace añadirán la información necesaria para moverlo.',
+        event: 'El navegador interpretó la URL, DNS obtuvo la IP y HTTP preparó la solicitud.'
       },
       {
-        zone: 'Localización', title: 'Resolución DNS', short: 'DNS', protocol: 'DNS · UDP/TCP 53', layer: 'application',
-        summary: 'DNS traduce el nombre del sitio a una dirección IP que la red puede utilizar.',
-        input: 'Un dominio, por ejemplo: ejemplo.com.',
-        action: 'Se revisan cachés y, si hace falta, se consulta a un resolvedor DNS siguiendo la jerarquía del sistema.',
-        output: 'Una dirección IPv4 o IPv6 con un tiempo de vida o TTL.',
-        reality: 'DNS localiza el destino; no decide la ruta que seguirán los paquetes. El TTL indica cuánto puede conservarse la respuesta en caché.',
-        encapsulation: 'La consulta DNS es otra comunicación de aplicación, normalmente pequeña y rápida.',
-        event: 'DNS devolvió la dirección 203.0.113.24 para el dominio.'
+        zone: 'Red local', title: 'Wi‑Fi, Ethernet y conmutación', short: 'Red local', protocol: 'Proceso de enlace: 802.11 · Ethernet', layers: ['link', 'network'],
+        summary: 'El dispositivo entrega la información a la red local para alcanzar su puerta de enlace.',
+        input: 'Datos de aplicación protegidos y una dirección IP de destino.',
+        action: 'La tarjeta de red crea una trama; el punto de acceso o switch la mueve dentro del segmento local mediante direcciones MAC.',
+        output: 'Una trama dirigida al router que conecta la red con el exterior.',
+        reality: 'Una VLAN puede segmentar esta red, pero no es una parada obligatoria en todos los recorridos.',
+        encapsulation: 'Mensaje → segmento o datagrama → paquete IP → trama Wi‑Fi/Ethernet.',
+        event: 'La red local entregó la trama a la puerta de enlace.'
       },
       {
-        zone: 'Red local', title: 'Wi‑Fi o Ethernet', short: 'Red local', protocol: '802.11 / Ethernet', layer: 'link',
-        summary: 'El equipo entrega la información a la red local para alcanzar su puerta de enlace.',
-        input: 'Datos de las capas superiores y la dirección IP de destino.',
-        action: 'La tarjeta de red forma una trama y utiliza direcciones MAC para el salto dentro de la red local.',
-        output: 'Una trama enviada al punto de acceso o al conmutador.',
-        reality: 'La dirección MAC sirve en el enlace local; se reemplaza en cada nuevo enlace del recorrido.',
-        encapsulation: 'Encapsulación: mensaje → segmento → paquete IP → trama de enlace.',
-        event: 'La interfaz de red creó una trama para la puerta de enlace.'
+        zone: 'Puerta de enlace', title: 'Router y traducción de direcciones', short: 'Router', protocol: 'Proceso de red: IP · NAT/PAT', layers: ['network', 'link'],
+        summary: 'El router decide la salida de la red local y prepara el paquete para el siguiente enlace.',
+        input: 'Una trama que contiene un paquete destinado a otra red.',
+        action: 'El router retira la trama, consulta su tabla de rutas y puede traducir la dirección privada mediante NAT o PAT.',
+        output: 'El paquete reenviado hacia el proveedor con una nueva trama de enlace.',
+        reality: 'La dirección MAC cambia entre enlaces; la dirección IP guía la comunicación entre redes y NAT/PAT puede modificar el origen.',
+        encapsulation: 'La trama se reemplaza en cada enlace mientras el paquete IP continúa hacia el destino.',
+        event: 'El router eligió la salida y aplicó NAT/PAT cuando fue necesario.'
       },
       {
-        zone: 'Red local', title: 'Router y NAT', short: 'Router + NAT', protocol: 'IP · ARP/ND · NAT', layer: 'network',
-        summary: 'El router conecta la red local con otras redes y prepara la salida hacia el proveedor.',
-        input: 'Una trama cuyo paquete IP tiene un destino externo.',
-        action: 'El router elimina la trama, consulta su tabla de rutas y puede traducir la dirección privada mediante NAT.',
-        output: 'Un nuevo enlace con el mismo destino IP y, posiblemente, una dirección de origen pública.',
-        reality: 'NAT es común en IPv4, pero no constituye por sí mismo una medida completa de seguridad.',
-        encapsulation: 'La trama cambia en el nuevo enlace; el paquete IP continúa hacia el destino.',
-        event: 'El router eligió la salida y registró la traducción NAT.'
+        zone: 'Internet', title: 'Proveedor y enrutamiento entre redes', short: 'Internet', protocol: 'Procesos activos: IP · TCP/QUIC · TLS', layers: ['network', 'transport', 'security'],
+        summary: 'Routers del proveedor y de Internet encaminan paquetes entre redes hasta acercarlos al servicio.',
+        input: 'Paquetes IP que pertenecen a una comunicación entre dos procesos.',
+        action: 'Cada router selecciona el siguiente salto. Al mismo tiempo, TCP o QUIC controla la comunicación y TLS protege los datos entre los extremos.',
+        output: 'Paquetes que alcanzan la red donde se encuentra el servicio.',
+        reality: 'TCP, QUIC y TLS no son estaciones físicas: sus mensajes viajan por esta misma ruta de red.',
+        encapsulation: 'IP guía los paquetes; transporte controla la entrega y TLS conserva cifrado el contenido.',
+        event: 'Internet encaminó los paquetes mientras transporte y TLS mantuvieron la comunicación.'
       },
       {
-        zone: 'Internet', title: 'Enrutamiento entre redes', short: 'Ruta IP', protocol: 'IPv4/IPv6 · BGP', layer: 'network',
-        summary: 'Varios routers encaminan el paquete de red en red hasta acercarlo al servidor.',
-        input: 'Un paquete con direcciones IP de origen y destino.',
-        action: 'Cada router examina el destino y elige el siguiente salto según su tabla; el TTL o Hop Limit disminuye.',
-        output: 'El paquete avanza por una ruta disponible hacia la red de destino.',
-        reality: 'Internet no garantiza una ruta fija. Paquetes de la misma comunicación pueden atravesar caminos distintos.',
-        encapsulation: 'IP permite el recorrido entre redes; cada enlace vuelve a envolver el paquete en una trama.',
-        event: 'Los routers de Internet encaminaron el paquete hacia la red de destino.'
+        zone: 'Borde opcional', title: 'Entrada y protección del servicio', short: 'Borde opcional', protocol: 'Servicios posibles: CDN · WAF', layers: ['application', 'security'],
+        summary: 'La arquitectura puede utilizar una CDN o un WAF antes de entregar la solicitud al servidor.',
+        input: 'Una solicitud HTTPS que alcanzó la infraestructura del servicio.',
+        action: 'La CDN puede responder desde caché y el WAF puede aplicar reglas. Si no corresponde responder o bloquear, la solicitud continúa.',
+        output: 'Una respuesta desde el borde o una solicitud autorizada hacia el servidor.',
+        reality: 'CDN y WAF son componentes opcionales; su presencia y orden dependen del diseño del servicio.',
+        encapsulation: 'Estos servicios interpretan la solicitud de aplicación; no sustituyen las funciones de IP, transporte o TLS.',
+        event: 'El borde revisó caché y reglas antes de permitir el avance.'
       },
       {
-        zone: 'Extremo a extremo', title: 'Transporte y puertos', short: 'Transporte', protocol: 'TCP / UDP / QUIC', layer: 'transport',
-        summary: 'La capa de transporte conecta procesos de los dos extremos y define cómo se entregarán los datos.',
-        input: 'Datos de la aplicación y un servicio de destino.',
-        action: 'TCP establece una conexión fiable con SYN, SYN-ACK y ACK; QUIC ofrece fiabilidad sobre UDP; los puertos identifican aplicaciones.',
-        output: 'Segmentos TCP o datagramas UDP/QUIC dirigidos, por ejemplo, al puerto 443.',
-        reality: 'TCP y QUIC son funciones lógicas de los extremos. No son cajas físicas por las que pase el paquete.',
-        encapsulation: 'El mensaje se divide y recibe números, puertos y mecanismos de control según el transporte.',
-        event: 'El transporte abrió una comunicación con el puerto 443.'
+        zone: 'Servidor', title: 'Procesamiento, balanceo y datos', short: 'Servidor', protocol: 'Procesos internos: HTTP · API · SQL', layers: ['application'],
+        summary: 'El servicio procesa la solicitud y construye el resultado que debe regresar al navegador.',
+        input: 'Una solicitud HTTP aceptada por la infraestructura.',
+        action: 'Puede existir balanceo entre servidores; la aplicación valida y ejecuta su lógica, y consulta caché, datos o servicios solo cuando hace falta.',
+        output: 'Un estado HTTP, encabezados y contenido como HTML, JSON o archivos.',
+        reality: 'Balanceador y base de datos tampoco son obligatorios en cada arquitectura ni en cada solicitud.',
+        encapsulation: 'La lógica trabaja con el significado del mensaje; después la respuesta vuelve a encapsularse para regresar.',
+        event: 'El servidor procesó la solicitud y construyó una respuesta HTTP.'
       },
       {
-        zone: 'Extremo a extremo', title: 'Seguridad TLS', short: 'TLS / HTTPS', protocol: 'TLS 1.3 · HTTPS', layer: 'security',
-        summary: 'TLS autentica el servidor y cifra la conversación antes de enviar información sensible.',
-        input: 'Una conexión de transporte y el nombre del sitio esperado.',
-        action: 'Cliente y servidor acuerdan claves, el navegador valida el certificado y comienza el cifrado.',
-        output: 'Un canal protegido contra lectura y alteración durante el tránsito.',
-        reality: 'HTTPS protege la comunicación, pero no garantiza que el contenido del sitio sea verdadero o seguro.',
-        encapsulation: 'TLS cifra la información de aplicación antes de que transporte e IP la envíen.',
-        event: 'El certificado fue validado y se acordaron claves de sesión.'
-      },
-      {
-        zone: 'Aplicación', title: 'Solicitud HTTP', short: 'HTTP', protocol: 'HTTP/2 o HTTP/3', layer: 'application',
-        summary: 'HTTP expresa qué recurso se solicita, con qué método y qué información acompaña la petición.',
-        input: 'Método, ruta, encabezados y, cuando corresponde, un cuerpo.',
-        action: 'El navegador construye una petición como GET /pagina o POST /api/mensaje y añade encabezados.',
-        output: 'Una solicitud HTTP cifrada dentro de la conexión segura.',
-        reality: 'HTTP define mensajes de aplicación. HTTPS es HTTP protegido por TLS.',
-        encapsulation: 'La solicitud HTTP es el contenido útil que las capas inferiores transportan.',
-        event: 'Se envió POST /api/mensaje con encabezados y contenido.'
-      },
-      {
-        zone: 'Borde', title: 'CDN y caché', short: 'CDN', protocol: 'HTTPS · Cache-Control', layer: 'application',
-        summary: 'Una red de distribución puede responder desde un punto cercano si conserva una copia válida.',
-        input: 'Una solicitud HTTPS y una clave de caché.',
-        action: 'La CDN revisa si tiene una respuesta reutilizable; si no, reenvía la solicitud al origen.',
-        output: 'Una respuesta inmediata desde caché o una solicitud que continúa.',
-        reality: 'No todos los servicios usan CDN y el contenido dinámico suele necesitar consultar el origen.',
-        encapsulation: 'La CDN actúa en el nivel de aplicación sobre solicitudes y respuestas HTTP.',
-        event: 'La CDN revisó su caché y no encontró una copia vigente.'
-      },
-      {
-        zone: 'Borde', title: 'Firewall de aplicaciones', short: 'WAF', protocol: 'HTTPS · reglas WAF', layer: 'application',
-        summary: 'El WAF examina patrones de la solicitud para permitirla o bloquearla antes de llegar a la aplicación.',
-        input: 'Ruta, encabezados, parámetros y cuerpo de la solicitud.',
-        action: 'Se comparan los datos con reglas de seguridad, límites de frecuencia y señales de comportamiento.',
-        output: 'Una solicitud permitida o una respuesta de bloqueo, normalmente 403.',
-        reality: 'Un WAF reduce ciertos ataques, pero necesita reglas, monitoreo y controles adicionales en la aplicación.',
-        encapsulation: 'El análisis ocurre sobre el mensaje HTTP después de terminar o inspeccionar la conexión segura.',
-        event: 'El WAF revisó la solicitud y permitió su avance.'
-      },
-      {
-        zone: 'Nube', title: 'Balanceador de carga', short: 'Balanceador', protocol: 'Proxy inverso · HTTP', layer: 'application',
-        summary: 'El balanceador distribuye las solicitudes entre servidores disponibles.',
-        input: 'Una solicitud aceptada en la dirección pública del servicio.',
-        action: 'Comprueba el estado de los servidores y selecciona uno según su algoritmo y carga.',
-        output: 'La solicitud reenviada a una instancia saludable.',
-        reality: 'El balanceo mejora disponibilidad y capacidad, pero algunas arquitecturas pequeñas no lo necesitan.',
-        encapsulation: 'Puede terminar una conexión y crear otra hacia el servidor interno.',
-        event: 'El balanceador eligió la instancia de aplicación B.'
-      },
-      {
-        zone: 'Nube', title: 'Servidor de aplicación', short: 'Aplicación', protocol: 'API · lógica de negocio', layer: 'application',
-        summary: 'La aplicación interpreta la petición, valida los datos y ejecuta la regla solicitada.',
-        input: 'La solicitud HTTP y el contexto de la sesión.',
-        action: 'El código autentica, valida, calcula y decide si debe consultar otros servicios.',
-        output: 'Un resultado o una causa de error convertida después en respuesta HTTP.',
-        reality: 'Un código 500 indica un fallo de la aplicación; no significa que TCP o Internet hayan dejado de funcionar.',
-        encapsulation: 'Aquí importa el significado del mensaje, no la forma de las tramas usadas en el camino.',
-        event: 'La aplicación validó el mensaje y ejecutó la operación.'
-      },
-      {
-        zone: 'Nube', title: 'Datos y servicios internos', short: 'Datos', protocol: 'SQL / caché / API interna', layer: 'application',
-        summary: 'La aplicación consulta la información necesaria para construir su respuesta.',
-        input: 'Una consulta autorizada creada por la lógica de negocio.',
-        action: 'Una base de datos, caché u otro servicio localiza y devuelve el dato solicitado.',
-        output: 'Registros o resultados para la aplicación.',
-        reality: 'No toda petición consulta una base de datos; algunas respuestas se calculan o ya están en caché.',
-        encapsulation: 'Esta comunicación interna también usa sus propios protocolos y conexiones.',
-        event: 'El servicio de datos devolvió el resultado a la aplicación.'
-      },
-      {
-        zone: 'Regreso', title: 'Respuesta HTTP', short: 'Respuesta', protocol: 'HTTP 200 · contenido', layer: 'application', direction: 'response',
-        summary: 'El servidor devuelve un estado, encabezados y contenido por la conexión hacia el cliente.',
-        input: 'El resultado de la aplicación.',
-        action: 'Se crea una respuesta HTTP; transporte confirma la entrega e IP la encamina de regreso.',
-        output: 'Bytes cifrados que llegan al navegador y pueden incluir HTML, JSON o archivos.',
-        reality: 'Los códigos 200, 404 o 500 son respuestas de aplicación. Haber recibido datos aún no significa que la página esté dibujada.',
-        encapsulation: 'En cada enlace se crea una trama nueva; en el cliente se retiran las capas hasta recuperar HTTP.',
-        event: 'La respuesta HTTP 200 comenzó su regreso al navegador.'
-      },
-      {
-        zone: 'Cliente', title: 'Interpretación y renderizado', short: 'Renderizado', protocol: 'HTML · CSS · JavaScript', layer: 'application', direction: 'response',
-        summary: 'El navegador interpreta los recursos recibidos y transforma los datos en una página visible.',
-        input: 'HTML, estilos, programas, imágenes y otros recursos.',
-        action: 'Construye el DOM, calcula estilos y distribución, pinta los elementos y ejecuta JavaScript.',
-        output: 'La interfaz que el usuario puede ver y utilizar.',
-        reality: 'El navegador puede realizar nuevas solicitudes durante este proceso; por eso una página continúa cargando después del primer HTML.',
-        encapsulation: 'El contenido salió de la red: ahora el navegador lo interpreta y lo presenta.',
-        event: 'El navegador construyó el DOM, aplicó CSS y pintó la página.'
+        zone: 'Regreso al cliente', title: 'Respuesta y renderizado', short: 'Respuesta', protocol: 'Procesos: HTTP · TLS · TCP/QUIC · HTML/CSS/JS', layers: ['application', 'security', 'transport', 'network', 'link'], direction: 'response',
+        summary: 'La respuesta regresa por la red y el navegador transforma los datos recibidos en una interfaz visible.',
+        input: 'Estado, encabezados y contenido producido por el servicio.',
+        action: 'IP encamina, transporte ordena o confirma, TLS descifra y el navegador construye DOM, estilos, distribución y pintura.',
+        output: 'Una página que la persona puede ver y utilizar.',
+        reality: 'La ruta física de regreso puede variar y el navegador puede solicitar recursos adicionales durante el renderizado.',
+        encapsulation: 'En el cliente se retiran las capas hasta recuperar HTTP; después HTML, CSS y JavaScript se interpretan.',
+        event: 'La respuesta llegó y el navegador construyó la interfaz.'
       }
     ];
 
     const scenarios = {
       success: {
-        note: 'La solicitud completa todas las etapas y el navegador construye la página recibida.',
+        note: 'La solicitud recorre siete etapas. Los protocolos trabajan por capas hasta que el navegador presenta la respuesta.',
         path: stages.map((_, index) => index)
       },
       cache: {
-        note: 'La CDN encuentra una copia válida y responde sin consultar el WAF, el balanceador, la aplicación ni la base de datos.',
-        path: [0, 1, 2, 3, 4, 5, 6, 7, 8, 13, 14],
-        overrides: { 8: { summary: 'La CDN encontró una copia válida y puede responder desde un punto cercano.', event: 'La CDN respondió desde caché: no fue necesario llegar al servidor de origen.' } }
+        note: 'La CDN encuentra una copia válida en el borde y responde sin llegar al servidor de origen.',
+        path: [0, 1, 2, 3, 4, 6],
+        overrides: {
+          4: { summary: 'La CDN encontró una copia válida y respondió desde el borde.', event: 'La CDN respondió desde caché: se omitió el servidor de origen.' },
+          6: { protocol: 'Respuesta desde CDN · HTTP · renderizado', summary: 'La respuesta almacenada en la CDN regresa al navegador y se renderiza.' }
+        }
       },
       dns: {
         note: 'El resolvedor DNS no obtiene una dirección IP. Sin conocer el destino, la solicitud web no puede comenzar.',
-        path: [0, 1], stop: 1, error: 'DNS agotó el tiempo de espera: no existe una dirección IP para continuar.'
+        path: [0], stop: 0, error: 'DNS agotó el tiempo de espera: no existe una dirección IP para continuar.',
+        overrides: { 0: { summary: 'La preparación se detuvo porque DNS no pudo localizar una dirección IP.', event: 'DNS no respondió y la solicitud web no pudo comenzar.' } }
       },
       loss: {
         note: 'Un paquete se pierde durante el enrutamiento. TCP detecta la ausencia de confirmación y retransmite los datos.',
-        path: stages.map((_, index) => index), lossAt: 4
+        path: stages.map((_, index) => index), lossAt: 3
       },
       firewall: {
         note: 'El WAF detecta un patrón no permitido y responde con HTTP 403 antes de que la solicitud llegue a la aplicación.',
-        path: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 13, 14], stop: 9, softStop: true,
-        overrides: { 9: { summary: 'El WAF detuvo la solicitud porque coincidió con una regla de seguridad.', event: 'El WAF bloqueó la solicitud y generó una respuesta HTTP 403.' }, 13: { protocol: 'HTTP 403 · bloqueado', summary: 'El navegador recibe una respuesta de bloqueo generada en el borde.', event: 'La respuesta HTTP 403 regresó al navegador.' } }
+        path: [0, 1, 2, 3, 4, 6], stop: 4, softStop: true,
+        overrides: {
+          4: { summary: 'El WAF detuvo la solicitud porque coincidió con una regla de seguridad.', event: 'El WAF bloqueó la solicitud y generó una respuesta HTTP 403.' },
+          6: { protocol: 'HTTP 403 · respuesta del WAF', summary: 'La respuesta de bloqueo regresa desde el borde hasta el navegador.', event: 'El navegador recibió la respuesta HTTP 403.' }
+        }
       },
       server: {
         note: 'La red funciona y la solicitud llega al servidor, pero la aplicación falla y devuelve un código HTTP 500.',
-        path: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14],
-        overrides: { 11: { summary: 'La aplicación encontró un error interno al procesar una solicitud que sí llegó correctamente.', event: 'La aplicación produjo un error interno.' }, 13: { protocol: 'HTTP 500 · error interno', summary: 'El servidor devuelve un error HTTP 500 por la conexión que sigue operativa.', event: 'La respuesta HTTP 500 comenzó su regreso al navegador.' } }
+        path: stages.map((_, index) => index),
+        overrides: {
+          5: { summary: 'La solicitud llegó correctamente, pero la aplicación encontró un error interno.', event: 'La aplicación produjo un error interno y preparó HTTP 500.' },
+          6: { protocol: 'HTTP 500 · respuesta de aplicación', summary: 'El error HTTP 500 regresa por una conexión que continúa funcionando.', event: 'El navegador recibió la respuesta HTTP 500.' }
+        }
       }
     };
 
@@ -983,7 +915,7 @@
       els.payload.style.borderLeftColor = isResponse ? 'var(--response)' : 'var(--request)';
       const msg = els.message.value.trim() || 'Hola, quiero consultar esta página';
       els.payload.textContent = isResponse ? `respuesta para: “${msg}”` : `mensaje: “${msg}”`;
-      updateLayers(index, stage.layer, isResponse);
+      updateLayers(stage.layers || [stage.layer], isResponse);
       updateMarker(index, isResponse, fromRun);
 
       const pathIndex = activePath.indexOf(index);
@@ -996,14 +928,14 @@
       requestAnimationFrame(() => nodes[index].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }));
     }
 
-    function updateLayers(index, activeLayer, isResponse) {
-      document.querySelectorAll('.layer').forEach(layer => layer.classList.toggle('active', layer.dataset.layer === activeLayer));
+    function updateLayers(activeLayers, isResponse) {
+      document.querySelectorAll('.layer').forEach(layer => layer.classList.toggle('active', activeLayers.includes(layer.dataset.layer)));
       const labels = {
-        application: index >= 7 ? 'HTTP contiene método, ruta y datos' : 'El navegador prepara la solicitud',
-        security: index >= 6 ? 'TLS cifra y autentica la sesión' : 'TLS protegerá los datos',
-        transport: index >= 5 ? 'TCP/QUIC usa puertos y controla entrega' : 'TCP/QUIC y puerto 443',
-        network: index >= 3 ? 'IP guía el paquete entre redes' : 'IP identifica origen y destino',
-        link: index >= 2 ? 'Cada salto usa una trama local' : 'Wi‑Fi/Ethernet crea la trama'
+        application: 'DNS localiza y HTTP describe la solicitud',
+        security: 'TLS autentica y cifra cuando se utiliza HTTPS',
+        transport: 'TCP/QUIC comunica procesos y controla la entrega',
+        network: 'IP identifica extremos y guía los paquetes',
+        link: 'Wi‑Fi/Ethernet mueve tramas en cada enlace'
       };
       if (isResponse) {
         labels.application = 'HTTP entrega estado y contenido';
